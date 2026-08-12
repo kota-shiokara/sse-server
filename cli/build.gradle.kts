@@ -10,7 +10,7 @@ kotlin {
     // linuxArm64 は Apple Silicon 上の Docker コンテナ内から叩く用。
     listOf(macosArm64(), linuxX64(), linuxArm64()).forEach { target ->
         target.binaries.executable {
-            entryPoint = "com.example.sse.cli.main"
+            entryPoint = "jp.ikanoshiokara.sse.cli.main"
             baseName = "ssectl"
         }
     }

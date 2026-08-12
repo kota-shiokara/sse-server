@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.sseclient"
+    namespace = "jp.ikanoshiokara.sseclient"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.sseclient"
+        applicationId = "jp.ikanoshiokara.sseclient"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

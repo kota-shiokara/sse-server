@@ -10,6 +10,6 @@ plugins {
 }
 
 allprojects {
-    group = "com.example"
+    group = "jp.ikanoshiokara"
     version = "0.1.0"
 }

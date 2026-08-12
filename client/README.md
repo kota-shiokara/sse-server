@@ -19,7 +19,7 @@
 ## 構成
 
 ```
-app/src/main/java/com/example/sseclient/
+app/src/main/java/jp/ikanoshiokara/sseclient/
 ├── MainActivity.kt / Navigation.kt        画面の入口
 ├── data/SseRepository.kt                 OkHttp SSE で接続し Flow<SseUpdate> を流す
 └── ui/main/

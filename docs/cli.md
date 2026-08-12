@@ -89,7 +89,7 @@ docker run --rm --network sse-server_default \
 ## 実装
 
 ```
-cli/src/commonMain/kotlin/com/example/sse/cli/
+cli/src/commonMain/kotlin/jp/ikanoshiokara/sse/cli/
 ├── Main.kt        # コマンド定義 (Clikt)
 ├── Commands.kt    # send / comment / scenario / disconnect / stats / watch
 ├── SseApi.kt      # WebAPI クライアント (Ktor client CIO)

@@ -46,17 +46,17 @@ sse-server/
 ├── uninstall-cli.sh
 ├── docs/
 ├── shared/
-│   └── src/commonMain/kotlin/com/example/sse/api/ApiModels.kt
+│   └── src/commonMain/kotlin/jp/ikanoshiokara/sse/api/ApiModels.kt
 ├── server/
 │   ├── Dockerfile
 │   └── src/main/
-│       ├── kotlin/com/example/sse/
+│       ├── kotlin/jp/ikanoshiokara/sse/
 │       │   ├── Application.kt   # 起動とルーティング
 │       │   ├── Broadcaster.kt   # 全セッションへの配信ハブ (SharedFlow)
 │       │   └── Frames.kt        # EventRequest → SSE フレーム
 │       └── resources/static/    # 送信コンソール (index.html)
 ├── cli/
-│   └── src/commonMain/kotlin/com/example/sse/cli/
+│   └── src/commonMain/kotlin/jp/ikanoshiokara/sse/cli/
 ├── scenarios/demo.json          # シナリオのサンプル
 └── client/                      # 受信側 Android アプリ (独立した Gradle ビルド)
     ├── gradlew

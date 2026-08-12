@@ -5,7 +5,7 @@ plugins {
 }
 
 application {
-    mainClass = "com.example.sse.ApplicationKt"
+    mainClass = "jp.ikanoshiokara.sse.ApplicationKt"
 }
 
 kotlin {
