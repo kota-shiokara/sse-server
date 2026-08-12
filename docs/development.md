@@ -39,6 +39,30 @@ docker build -f server/Dockerfile -t sse-server:local .
 `-Psse.serverOnly=true` を渡して CLI モジュールを Gradle の構成から外しているので、
 イメージのビルドに Kotlin/Native のツールチェーンは要らない。
 
+## Android クライアント (client/)
+
+`client/` は**独立した Gradle ビルド**で、ルートの `settings.gradle.kts` には含めていない。
+
+```sh
+cd client
+./gradlew assembleDebug        # APK
+./gradlew testDebugUnitTest    # ViewModel と SSE パース (MockWebServer)
+```
+
+分けている理由:
+
+- Android SDK と JDK 17 を要求する。1 つのビルドにすると、サーバーだけ触りたいときや
+  SDK の無い CI でも設定フェーズで SDK を要求されるようになる
+- Kotlin のバージョンが違う（client 2.3.20 / こちら 2.4.0）。カタログを統合すると
+  client 側を引き上げることになり、Compose コンパイラの整合確認が付いてくる
+- client は受信専用で `shared` の DTO を使わない。共有するコードが無いので、
+  分けても失うものがない
+
+将来 client からサーバーへ POST する機能を入れるなら、`shared` に `androidTarget()` を
+足して DTO を共有する価値が出る。その時点で統合を検討する。
+
+詳細は [client/README.md](../client/README.md)。
+
 ## バージョン管理
 
 依存のバージョンは [`gradle/libs.versions.toml`](../gradle/libs.versions.toml) に集約している。

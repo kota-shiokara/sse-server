@@ -6,7 +6,7 @@ Kotlin + Ktor で書いた SSE (Server-Sent Events) のモックサーバーと�
 event 名や `id` の指定、連続送信、遅延、サーバー側からの強制切断、
 複数イベントのシナリオ再生ができる。
 
-受信側の Android クライアントは [`../sse-client`](../sse-client) にある。
+受信側を試すための Android クライアントも同梱している（[`client/`](client/README.md)）。
 
 ## ドキュメント
 
@@ -16,6 +16,7 @@ event 名や `id` の指定、連続送信、遅延、サーバー側からの�
 | [docs/cli.md](docs/cli.md) | `ssectl` のインストール、使い方、クロスコンパイル |
 | [docs/development.md](docs/development.md) | 設計メモ、テスト、イメージのビルド |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | ポート衝突、CORS、変更が反映されないとき |
+| [client/README.md](client/README.md) | 受信側の Android アプリ（別ビルド） |
 
 この README には「何であるか」と「起動して設定するまで」だけを置いている。
 
@@ -31,6 +32,10 @@ event 名や `id` の指定、連続送信、遅延、サーバー側からの�
 
 `cli` はサーバーのクラスを直接呼ばず、`shared` の DTO を共有した上で
 **HTTP しか使わない**。つまり CLI とサーバーは独立にビルド・配布できる。
+
+`client/` の Android アプリは**別の Gradle ビルド**として同居している（`client/gradlew`）。
+Android SDK と JDK 17 を要求し、Kotlin のバージョンもこちらとは別なので、
+1 つのビルドにまとめていない。受信専用で `shared` も使わないため、分けても失うものがない。
 
 ```
 sse-server/
@@ -52,7 +57,18 @@ sse-server/
 │       └── resources/static/    # 送信コンソール (index.html)
 ├── cli/
 │   └── src/commonMain/kotlin/com/example/sse/cli/
-└── scenarios/demo.json          # シナリオのサンプル
+├── scenarios/demo.json          # シナリオのサンプル
+└── client/                      # 受信側 Android アプリ (独立した Gradle ビルド)
+    ├── gradlew
+    ├── settings.gradle.kts
+    └── app/
+```
+
+ビルドは 2 系統ある。
+
+```sh
+./gradlew check                        # shared / server / cli
+cd client && ./gradlew assembleDebug   # Android アプリ
 ```
 
 ## クイックスタート

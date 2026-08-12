@@ -3,3 +3,9 @@ build/
 .kotlin/
 .idea/
 *.iml
+
+# JVM のヒープダンプ (デーモンが OOM で落ちたときに残る)
+*.hprof
+
+# Android SDK のパスなど、マシン固有の設定
+local.properties

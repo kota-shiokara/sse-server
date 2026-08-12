@@ -5,6 +5,10 @@
 build
 */build
 *.iml
+*.hprof
+
+# サーバーのイメージに要らないもの
 README.md
 docs
 scenarios
+client
