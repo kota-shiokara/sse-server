@@ -1,0 +1,18 @@
+{
+  "name": "demo",
+  "steps": [
+    { "event": "status", "data": "処理を開始しました" },
+    { "delayMs": 500, "event": "progress", "data": "25%" },
+    { "delayMs": 500, "event": "progress", "data": "50%" },
+    { "delayMs": 500, "comment": "まだ処理中" },
+    { "delayMs": 500, "event": "progress", "data": "75%" },
+    { "delayMs": 500, "event": "progress", "data": "100%" },
+    {
+      "delayMs": 500,
+      "event": "result",
+      "data": "{\"status\":\"ok\",\"count\":3}",
+      "id": "result-1"
+    },
+    { "delayMs": 1000, "disconnect": true }
+  ]
+}

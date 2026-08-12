@@ -1,0 +1,10 @@
+.git
+.gradle
+.idea
+.kotlin
+build
+*/build
+*.iml
+README.md
+docs
+scenarios

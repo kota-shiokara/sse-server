@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SSE mock console</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0 auto; padding: 1.5rem; max-width: 68rem;
+      display: grid; gap: 1.5rem; grid-template-columns: minmax(20rem, 1fr) minmax(18rem, 24rem);
+      align-items: start;
+    }
+    @media (max-width: 60rem) { body { grid-template-columns: 1fr; } }
+    h1 { grid-column: 1 / -1; margin: 0; font-size: 1.3rem; }
+    h2 { margin: 0 0 .6rem; font-size: 1rem; }
+    section { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: .5rem; padding: 1rem; }
+    label { display: block; font-size: .8rem; margin-bottom: .15rem; opacity: .75; }
+    input, textarea, button { font: inherit; }
+    input, textarea {
+      width: 100%; padding: .35rem .5rem; box-sizing: border-box;
+      border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+      border-radius: .3rem; background: transparent; color: inherit;
+    }
+    textarea { font-family: ui-monospace, monospace; resize: vertical; }
+    .row { display: flex; gap: .6rem; flex-wrap: wrap; }
+    .row > div { flex: 1 1 6rem; }
+    .field { margin-bottom: .6rem; }
+    .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; }
+    button {
+      padding: .4rem .9rem; border-radius: 999px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+      background: transparent; color: inherit;
+    }
+    button.primary { background: #3f51b5; border-color: #3f51b5; color: #fff; }
+    button.danger { border-color: #c62828; color: #c62828; }
+    #result { margin-top: .7rem; font-family: ui-monospace, monospace; font-size: .8rem; min-height: 1.2em; }
+    #result.error { color: #c62828; }
+    #log { font-family: ui-monospace, monospace; font-size: .8rem; height: 22rem; overflow-y: auto; }
+    #log div { padding: .35rem 0; border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+    #log .meta { opacity: .6; font-size: .72rem; }
+    .stats { display: flex; gap: 1rem; font-size: .85rem; margin-bottom: .6rem; }
+    .stats b { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <h1>SSE mock console</h1>
+
+  <section>
+    <h2>イベントを送る</h2>
+
+    <div class="row">
+      <div class="field">
+        <label for="event">event 名（空にすると event 行なし）</label>
+        <input id="event" value="message" />
+      </div>
+      <div class="field">
+        <label for="id">id（空欄で自動採番）</label>
+        <input id="id" placeholder="自動採番" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="data">data（改行するとその分 data 行が増える）</label>
+      <textarea id="data" rows="4">hello sse</textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="comment">comment</label>
+        <input id="comment" placeholder="コメント行" />
+      </div>
+      <div class="field">
+        <label for="retry">retry (ms)</label>
+        <input id="retry" type="number" min="0" placeholder="なし" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="repeat">repeat</label>
+        <input id="repeat" type="number" min="1" value="1" />
+      </div>
+      <div class="field">
+        <label for="interval">interval (ms)</label>
+        <input id="interval" type="number" min="0" value="0" />
+      </div>
+      <div class="field">
+        <label for="delay">delay (ms)</label>
+        <input id="delay" type="number" min="0" value="0" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label><input type="checkbox" id="noId" style="width:auto" /> id 行を送らない</label>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="send">送信</button>
+      <button id="sendComment">コメントのみ送信</button>
+      <button class="danger" id="disconnect">全接続を切断</button>
+    </div>
+
+    <div id="result"></div>
+  </section>
+
+  <section>
+    <h2>受信ログ（このページ自身の接続）</h2>
+    <div class="stats">
+      <span>接続数 <b id="subscribers">-</b></span>
+      <span>最後の id <b id="lastEventId">-</b></span>
+      <span>状態 <b id="status">-</b></span>
+    </div>
+    <div class="actions" style="margin-top:0">
+      <button id="toggle">切断</button>
+      <button id="clear">ログを消す</button>
+    </div>
+    <div id="log"></div>
+  </section>
+
+  <section style="grid-column: 1 / -1">
+    <h2>シナリオ再生</h2>
+    <p style="margin:.2rem 0 .6rem; font-size:.8rem; opacity:.75">
+      各ステップは送信フォームと同じフィールドに加えて <code>delayMs</code>（そのステップ前の待ち時間）と
+      <code>disconnect</code> が使える。
+    </p>
+    <textarea id="scenario" rows="12"></textarea>
+    <div class="actions">
+      <button class="primary" id="playScenario">再生</button>
+      <button id="resetScenario">サンプルに戻す</button>
+    </div>
+  </section>
+
+  <script>
+    const SAMPLE_SCENARIO = {
+      name: 'demo',
+      steps: [
+        { event: 'status', data: '処理を開始しました' },
+        { delayMs: 500, event: 'progress', data: '25%' },
+        { delayMs: 500, event: 'progress', data: '50%' },
+        { delayMs: 500, comment: 'まだ処理中' },
+        { delayMs: 500, event: 'progress', data: '75%' },
+        { delayMs: 500, event: 'progress', data: '100%' },
+        { delayMs: 500, event: 'result', data: '{"status":"ok","count":3}', id: 'result-1' },
+        { delayMs: 1000, disconnect: true },
+      ],
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const setResult = (text, isError = false) => {
+      $('result').textContent = text;
+      $('result').className = isError ? 'error' : '';
+    };
+
+    async function postJson(path, body) {
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const text = await res.text();
+        setResult(`${res.status} ${text}`, !res.ok);
+      } catch (e) {
+        setResult(String(e), true);
+      }
+    }
+
+    // ---- 送信フォーム ----
+    function buildRequest() {
+      const req = {
+        // 空文字はサーバー側で「その行を送らない」の意味になる
+        event: $('event').value,
+        repeat: Number($('repeat').value) || 1,
+        intervalMs: Number($('interval').value) || 0,
+        delayMs: Number($('delay').value) || 0,
+      };
+      const data = $('data').value;
+      if (data !== '') req.data = data;
+      if ($('comment').value !== '') req.comment = $('comment').value;
+      if ($('retry').value !== '') req.retry = Number($('retry').value);
+      if ($('noId').checked) req.id = '';
+      else if ($('id').value !== '') req.id = $('id').value;
+      return req;
+    }
+
+    $('send').onclick = () => postJson('/publish', buildRequest());
+
+    $('sendComment').onclick = () => {
+      const comment = $('comment').value || 'keep-alive';
+      postJson('/publish', { event: '', comment });
+    };
+
+    $('disconnect').onclick = () => postJson('/disconnect', {});
+
+    // ---- シナリオ ----
+    $('scenario').value = JSON.stringify(SAMPLE_SCENARIO, null, 2);
+    $('resetScenario').onclick = () => {
+      $('scenario').value = JSON.stringify(SAMPLE_SCENARIO, null, 2);
+    };
+    $('playScenario').onclick = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse($('scenario').value);
+      } catch (e) {
+        setResult(`シナリオの JSON が壊れています: ${e.message}`, true);
+        return;
+      }
+      postJson('/scenario', parsed);
+    };
+
+    // ---- 受信ログ ----
+    let source = null;
+
+    const log = (data, meta) => {
+      const el = document.createElement('div');
+      const metaEl = document.createElement('div');
+      metaEl.className = 'meta';
+      metaEl.textContent = meta;
+      const dataEl = document.createElement('div');
+      dataEl.textContent = data;
+      el.append(metaEl, dataEl);
+      $('log').prepend(el);
+    };
+
+    const now = () => new Date().toTimeString().slice(0, 8);
+
+    function connect() {
+      source = new EventSource('/events');
+      $('status').textContent = 'connecting…';
+      $('toggle').textContent = '切断';
+      source.onopen = () => ($('status').textContent = 'connected');
+      source.onerror = () => ($('status').textContent = 'disconnected (retrying…)');
+      // 名前付きイベントも拾うため、既定の message 以外は addEventListener が必要になる。
+      // ここでは代表的なものを登録しておく。
+      ['message', 'open', 'status', 'progress', 'result'].forEach((type) =>
+        source.addEventListener(type, (e) =>
+          log(e.data, `${now()}  event=${type}${e.lastEventId ? `  id=${e.lastEventId}` : ''}`)
+        )
+      );
+    }
+
+    function disconnectSelf() {
+      source?.close();
+      source = null;
+      $('status').textContent = 'disconnected';
+      $('toggle').textContent = '接続';
+    }
+
+    $('toggle').onclick = () => (source ? disconnectSelf() : connect());
+    $('clear').onclick = () => ($('log').textContent = '');
+
+    connect();
+
+    // ---- 接続数のポーリング ----
+    async function refreshStats() {
+      try {
+        const res = await fetch('/stats');
+        const stats = await res.json();
+        $('subscribers').textContent = stats.subscribers;
+        $('lastEventId').textContent = stats.lastEventId;
+      } catch {
+        /* サーバーが落ちている間は黙って次回に任せる */
+      }
+    }
+    refreshStats();
+    setInterval(refreshStats, 2000);
+  </script>
+</body>
+</html>
